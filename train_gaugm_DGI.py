@@ -71,8 +71,13 @@ def sample_graph_det(adj_orig, A_pred, remove_pct, add_pct):
 def distance(a,b):
     res = 0
     for i in range(a.shape[0]):
-        res -= (a[i]-b[i])*(a[i]-b[i])
+        res -= (a[i]-b[i])*(a[i]-b[i])*1000
     return res
+
+#定义svd恢复函数
+def resvd(U,Sigma,V,n):
+    si = np.diag(Sigma[0:n])
+    return U[:,:n]@si@V[:n,:]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='single')
@@ -106,24 +111,32 @@ if __name__ == "__main__":
     i = params['i']
     #A_pred = pickle.load(open(f'data/edge_probabilities/{args.dataset}_graph_{i}_logits.pkl', 'rb'))
     #A_pred = pickle.load(open(f'data/edge_probabilities/{args.dataset}_graph_{6}_logits.pkl', 'rb'))
-    a = np.loadtxt('data/edge_probabilities/Vecdgi.emb')
 
+    # A_pred = np.array([[0 for i in range(a.shape[0])] for j in range(a.shape[0])])
+    # for i in range(a.shape[0]):
+    #     for j in range(a.shape[0]):
+    #         A_pred[i][j] = distance(a[i], a[j])
+    # for i in range(a.shape[0]):
+    #     A_pred[i][i] = -1000
+    #np.savetxt('./data/edge_probabilities/SDNE_apred_mse.txt', A_pred)
+
+    a = np.loadtxt('data/edge_probabilities/Vecdgi1.emb')
     A_pred = a @ a.T
-
-
     A_pred = torch.tensor(A_pred)
     A_pred = torch.sigmoid(A_pred)
     A_pred = A_pred.numpy()
     print(type(A_pred))
     print(A_pred.shape)
     print(A_pred)
-    #adj_pred = sample_graph_det(adj_orig, A_pred, params['rm_pct'], params['add_pct'])
+    adj_pred = sample_graph_det(adj_orig, A_pred, params['rm_pct'], params['add_pct'])
 
 
-    adj_pred = sample_graph_det(adj_orig, A_pred, 0, 26)
-    #                 "rm_pct": 2,删除概率
-    #                 "add_pct": 57
+    adj_pred = sample_graph_det(adj_orig, A_pred, 0, 25)
+                    # "rm_pct": 2,删除概率
+                    # "add_pct": 57
 
+    A_pred = pickle.load(open(f'data/edge_probabilities/{args.dataset}_graph_{5}_logits.pkl', 'rb'))
+    adj_pred = sample_graph_det(adj_orig, A_pred, 2, 57)
 
     gnn = args.gnn
     if gnn == 'gcn':
@@ -144,9 +157,9 @@ if __name__ == "__main__":
         acc, _, _ = gnn.fit()
         #print(gnn.device)
         accs.append(acc)
-        print("********************************************************************************")
+        #print("********************************************************************************")
         print("range{}     acc:{}".format(j, acc))
-        print("********************************************************************************")
+        #print("********************************************************************************")
     cur_acc = np.mean(accs)
 
 
